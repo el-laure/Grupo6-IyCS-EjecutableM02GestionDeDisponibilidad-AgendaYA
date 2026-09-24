@@ -19,6 +19,7 @@ const asDate = (value: Date | string) => value instanceof Date ? value : new Dat
 const formatMonth = (date: Date | string) => asDate(date).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
 const formatDate = (date: Date | string) => asDate(date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 const mondayIndex = (date: Date) => (date.getDay() + 6) % 7
+const weekdayForDate = (date: Date) => weekdays[mondayIndex(date)]
 
 function createDays() {
   const result: Day[] = []
@@ -54,7 +55,7 @@ export function AvailabilityDashboard() {
   }, [days, view, cursor])
 
   function notify(message: string) { setToast(message); window.setTimeout(() => setToast(''), 3200) }
-  function dayState(day: Day): DayState { if (!enabled[weekdays[mondayIndex(day.date)]]) return 'disabled'; if (day.intervals.some((item) => item.type === 'bloqueado' && item.start === '00:00')) return 'blocked'; if (day.intervals.length) return 'configured'; return 'available' }
+  function dayState(day: Day): DayState { if (!enabled[weekdayForDate(day.date)]) return 'disabled'; if (day.intervals.some((item) => item.type === 'bloqueado' && item.start === '00:00')) return 'blocked'; if (day.intervals.length) return 'configured'; return 'available' }
   function selectDay(day: Day) { if (dayState(day) === 'disabled') { notify('Debe habilitar este día para editar su configuración.'); return }; setSelectedId(day.id) }
   function toggleWeekday(name: string) { setEnabled((current) => ({ ...current, [name]: !current[name] })); notify(`${name} quedó ${enabled[name] ? 'deshabilitado' : 'habilitado'} para editar todas sus próximas repeticiones.`) }
   function saveInterval(event: React.FormEvent) {
