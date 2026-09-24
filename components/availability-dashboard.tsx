@@ -34,11 +34,17 @@ const weekdayForDate = (date: Date) => weekdays[(date.getDay() + 6) % 7]
 
 function createDays() {
   const result: Day[] = []
-  const start = new Date(2026, 3, 1)
-  const end = new Date(2026, 3, 30)
+  // Keep a real date record for every day in the navigable range. This makes
+  // months outside the seeded April demo fully visible and editable.
+  const start = new Date(2025, 0, 1)
+  const end = new Date(2028, 11, 31)
+  let nextIntervalId = 1
   for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
     const key = dateKey(cursor)
-    result.push({ id: key, date: new Date(cursor), intervals: seed.filter((item) => item[0] === key).map((item, index) => ({ id: index + 1, start: item[1], end: item[2], type: item[3] })) })
+    const intervals = seed
+      .filter((item) => item[0] === key)
+      .map((item) => ({ id: nextIntervalId++, start: item[1], end: item[2], type: item[3] }))
+    result.push({ id: key, date: new Date(cursor), intervals })
   }
   return result
 }
