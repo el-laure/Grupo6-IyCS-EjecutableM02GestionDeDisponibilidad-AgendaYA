@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, LockKeyhole, Pencil, Plus, RotateCcw, Save, Settings2, Trash2, X } from 'lucide-react'
 
 type DayState = 'available' | 'configured' | 'blocked' | 'disabled'
-type Interval = { id: number; start: string; end: string; type: 'laboral' | 'bloqueado'; recurring?: boolean; inactive?: boolean }
+type Interval = { id: number; start: string; end: string; type: 'laboral' | 'bloqueado'; inactive?: boolean }
 type Day = { id: string; date: Date; intervals: Interval[]; hasReservation?: boolean }
 
 const weekdays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
@@ -57,7 +57,7 @@ export function AvailabilityDashboard() {
   const [modal, setModal] = useState<'interval' | 'block' | 'edit' | 'delete' | null>(null)
   const [editing, setEditing] = useState<Interval | null>(null)
   const [toast, setToast] = useState('')
-  const [form, setForm] = useState({ start: '', end: '', type: 'laboral' as Interval['type'], recurring: false })
+  const [form, setForm] = useState({ start: '', end: '', type: 'laboral' as Interval['type'] })
   const [enabled, setEnabled] = useState<Record<string, boolean>>({ Lunes: true, Martes: true, Miércoles: true, Jueves: true, Viernes: true, Sábado: true, Domingo: true })
   const [lead, setLead] = useState('4')
   const [unit, setUnit] = useState('horas')
@@ -81,8 +81,8 @@ export function AvailabilityDashboard() {
     setDays((current) => current.map((day) => day.id !== selected.id ? day : { ...day, intervals: editing ? day.intervals.map((item) => item.id === editing.id ? { ...item, ...form } : item) : [...day.intervals, { id: Date.now(), ...form }] }))
     setModal(null); setEditing(null); notify(editing ? 'Intervalo modificado correctamente.' : 'El intervalo se creó correctamente.')
   }
-  function openEdit(interval: Interval) { setEditing(interval); setForm({ start: interval.start, end: interval.end, type: interval.type, recurring: Boolean(interval.recurring) }); setModal('edit') }
-  function deleteInterval(all: boolean) { setDays((current) => current.map((day) => day.id !== selected.id ? day : { ...day, intervals: all && editing?.recurring ? day.intervals.filter((item) => item.id !== editing.id || !item.recurring) : day.intervals.filter((item) => item.id !== editing?.id) })); setModal(null); notify(all ? 'La recurrencia fue eliminada.' : 'La instancia fue eliminada.') }
+  function openEdit(interval: Interval) { setEditing(interval); setForm({ start: interval.start, end: interval.end, type: interval.type }); setModal('edit') }
+  function deleteInterval(_all: boolean) { setDays((current) => current.map((day) => day.id !== selected.id ? day : { ...day, intervals: day.intervals.filter((item) => item.id !== editing?.id) })); setModal(null); notify('La instancia fue eliminada.') }
   function blockDay() { if (selected.hasReservation) return setModal('block'); confirmBlock() }
   function confirmBlock() { setDays((current) => current.map((day) => day.id === selected.id ? { ...day, intervals: day.intervals.some((item) => item.start === '00:00' && item.type === 'bloqueado') ? day.intervals : [...day.intervals, { id: Date.now(), start: '00:00', end: '23:59', type: 'bloqueado' }] } : day)); setModal(null); notify('El día quedó bloqueado. Podés revertirlo desde “Desbloquear día”.') }
   function unblockDay() { setDays((current) => current.map((day) => day.id === selected.id ? { ...day, intervals: day.intervals.filter((item) => !(item.start === '00:00' && item.end === '23:59' && item.type === 'bloqueado')) } : day)); notify('El día fue desbloqueado correctamente.') }
