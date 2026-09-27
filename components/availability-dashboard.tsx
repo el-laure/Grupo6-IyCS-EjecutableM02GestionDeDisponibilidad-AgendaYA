@@ -57,6 +57,7 @@ export function AvailabilityDashboard() {
   const [modal, setModal] = useState<'interval' | 'block' | 'edit' | 'delete' | null>(null)
   const [editing, setEditing] = useState<Interval | null>(null)
   const [toast, setToast] = useState('')
+  const [reservationReprogrammed, setReservationReprogrammed] = useState(false)
   const [form, setForm] = useState({ start: '', end: '', type: 'laboral' as Interval['type'] })
   const [enabled, setEnabled] = useState<Record<string, boolean>>({ Lunes: true, Martes: true, Miércoles: true, Jueves: true, Viernes: true, Sábado: true, Domingo: true })
   const [lead, setLead] = useState('4')
@@ -89,10 +90,10 @@ export function AvailabilityDashboard() {
   }
   function blockDay() {
     if (selected.id === '2026-04-15') return notify('¡Advertencia! El día / intervalo que intenta bloquear registra reservas activas dentro de las próximas 24 hs. Acceda a Agenda para reprogramarlas o cancelarlas, e intente nuevamente.')
-    if (selected.id === '2026-04-23') return setModal('block')
+    if (selected.id === '2026-04-23' && !reservationReprogrammed) return setModal('block')
     if (selected.hasReservation) return setModal('block'); confirmBlock()
   }
-  function confirmBlock() { setDays((current) => current.map((day) => day.id === selected.id ? { ...day, intervals: day.intervals.some((item) => item.start === '00:00' && item.type === 'bloqueado') ? day.intervals : [...day.intervals, { id: Date.now(), start: '00:00', end: '23:59', type: 'bloqueado' }] } : day)); setModal(null); notify('El día quedó bloqueado. Podés revertirlo desde “Desbloquear día”.') }
+  function confirmBlock() { setDays((current) => current.map((day) => day.id === selected.id ? { ...day, intervals: day.intervals.some((item) => item.start === '00:00' && item.type === 'bloqueado') ? day.intervals : [...day.intervals, { id: Date.now(), start: '00:00', end: '23:59', type: 'bloqueado' }] } : day)); if (selected.id === '2026-04-23') setReservationReprogrammed(true); setModal(null); notify('El día quedó bloqueado. Podés revertirlo desde “Desbloquear día”.') }
   function unblockDay() { setDays((current) => current.map((day) => day.id === selected.id ? { ...day, intervals: day.intervals.filter((item) => !(item.start === '00:00' && item.end === '23:59' && item.type === 'bloqueado')) } : day)); notify('El día fue desbloqueado correctamente.') }
   function navigate(amount: number) { setCursor((current) => new Date(current.getFullYear(), current.getMonth() + (view === 'month' ? amount : 0), current.getDate() + (view === 'week' ? amount * 7 : 0))) }
   function savePreferences(event: React.FormEvent) { event.preventDefault(); if (!/^\d+$/.test(lead) || Number(lead) <= 0 || !/^\d+$/.test(limit) || Number(limit) <= 0) return notify('Ingrese un valor numérico entero mayor a cero.'); notify('Preferencias guardadas correctamente.') }
