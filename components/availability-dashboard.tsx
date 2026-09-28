@@ -98,5 +98,469 @@ export function AvailabilityDashboard() {
   function navigate(amount: number) { setCursor((current) => new Date(current.getFullYear(), current.getMonth() + (view === 'month' ? amount : 0), current.getDate() + (view === 'week' ? amount * 7 : 0))) }
   function savePreferences(event: React.FormEvent) { event.preventDefault(); if (!/^\d+$/.test(lead) || Number(lead) <= 0 || !/^\d+$/.test(limit) || Number(limit) <= 0) return notify('Ingrese un valor numérico entero mayor a cero.'); notify('Preferencias guardadas correctamente.') }
 
-  return <div className="app-shell"><header className="topbar"><div className="brand">AgendaYA <span>— Administrador</span></div><nav><a>Inicio</a><a className="active">Disponibilidad</a><a>Eventos</a><a>Agenda</a></nav><button className="avatar" data-cy="profile-menu">AD</button></header><main className="content"><div className="page-heading"><div><p className="eyebrow">CONFIGURACIÓN</p><h1>Disponibilidad</h1><p className="muted">Definí cuándo pueden reservar reuniones contigo.</p></div><div className="sync"><span className="status-dot" /> Todos los cambios están guardados</div></div><section className="toolbar-card"><div className="toolbar-title"><CalendarDays size={18} /><div><strong>Calendario</strong><span>{formatMonth(cursor)}</span></div></div><div className="view-switch"><button data-cy="month-view-button" className={view === 'month' ? 'selected' : ''} onClick={() => setView('month')}>Vista mensual</button><button data-cy="week-view-button" className={view === 'week' ? 'selected' : ''} onClick={() => setView('week')}>Vista semanal</button></div><div className="arrows"><button aria-label="Mes anterior" data-cy="previous-month" onClick={() => navigate(-1)}><ChevronLeft size={17} /></button><button aria-label="Mes siguiente" data-cy="next-month" onClick={() => navigate(1)}><ChevronRight size={17} /></button></div></section><section className="workspace"><div className="calendar-panel"><div className="calendar-head"><span>{formatMonth(cursor).toUpperCase()}</span><div className="legend"><span><i className="dot green" /> Disponible</span><span><i className="dot blue" /> Configurado</span><span><i className="dot red" /> Bloqueado</span><span><i className="dot gray" /> No editable</span></div></div><div className={`calendar-grid ${view}`}><div className="week-labels">{shortDays.map((day) => <span key={day}>{day}</span>)}</div><div className="days-grid">{visibleDays.map((day, index) => <button key={day.id} style={index === 0 && view === 'month' ? { gridColumnStart: mondayIndex(day.date) + 1 } : undefined} data-cy={`calendar-day-${day.date.getDate()}`} aria-label={`${day.date.getDate()}, ${dayState(day)}`} onClick={() => selectDay(day)} className={`day-cell ${dayState(day)} ${selected.id === day.id ? 'selected-day' : ''}`}><b>{day.date.getDate()}</b>{day.intervals.filter((item) => !item.inactive).slice(0, 2).map((interval) => <span key={interval.id} className={`mini-interval ${interval.type}`}>{interval.start} – {interval.end}{interval.recurring ? ' · semanal' : ''}</span>)}</button>)}</div></div></div><aside className="detail-panel"><div className="detail-header"><div><p className="eyebrow">DÍA SELECCIONADO</p><h2>{asDate(selected.id).getDate()} de {asDate(selected.id).toLocaleDateString('es-AR', { month: 'long' })}</h2></div><span className={`state-pill ${dayState(selected)}`}>{dayState(selected) === 'blocked' ? 'Bloqueado' : dayState(selected) === 'disabled' ? 'Deshabilitado' : dayState(selected) === 'configured' ? 'Configurado' : 'Disponible'}</span></div><p className="detail-date">{formatDate(selected.id)}</p><div className="interval-heading"><strong>Intervalos</strong><span>{selected.intervals.length} configurados</span></div><div className="interval-list">{selected.intervals.length === 0 ? <div className="empty-state"><Clock3 size={23} /><span>Sin intervalos configurados</span><small>Agregá un horario para comenzar.</small></div> : selected.intervals.map((interval) => <div className={`interval-card ${interval.type} ${dayState(selected) === 'blocked' ? 'locked' : ''}`} key={interval.id}><div className="interval-time"><Clock3 size={16} /><strong>{interval.start} – {interval.end}</strong>{interval.recurring && <small className="recurrence-badge">Semanal</small>}</div><span>{interval.type === 'laboral' ? 'Horario laboral' : 'Bloqueo de horario'}</span><div className="interval-actions"><button data-cy={`edit-interval-${interval.id}`} onClick={() => openEdit(interval)} disabled={dayState(selected) === 'disabled' || dayState(selected) === 'blocked'}><Pencil size={13} /> Editar</button><button data-cy={`delete-interval-${interval.id}`} onClick={() => { setEditing(interval); setModal('delete') }} disabled={dayState(selected) === 'disabled' || dayState(selected) === 'blocked'}><Trash2 size={13} /> Eliminar</button></div></div>)}</div>{dayState(selected) === 'blocked' ? <button data-cy="unblock-day-button" className="secondary-button full-button" onClick={unblockDay}><RotateCcw size={16} /> Desbloquear día</button> : <><button data-cy="add-interval-button" className="primary-button" disabled={dayState(selected) === 'disabled'} onClick={() => { setEditing(null); setForm({ start: '', end: '', type: 'laboral', recurring: false }); setModal('interval') }}><Plus size={17} /> Añadir intervalo</button><button data-cy="block-day-button" className="danger-button" disabled={dayState(selected) === 'disabled'} onClick={blockDay}><LockKeyhole size={16} /> Bloquear día seleccionado</button></>}</aside></section><div className="test-notes-grid"><p className="test-note">Bloquear días: Probar bloquear los días 15 de abril y 23 de abril para verificar los criterios de aceptación 3 y 4 respectivamente.</p><p className="test-note">Probar Añadir un nuevo intervalo bloqueado el día 16 de abril de 2026, entre las 12:00 y 17:00hs para testear el Escenario 2 de los criterios de aceptación de la US_ADM_008.</p><p className="test-note">Editar/eliminar: probar eliminación del intervalo laboral del 15 de abril de 2026.</p></div><section className="bottom-grid"><div className="info-card"><div className="section-title"><Settings2 size={18} /><div><h2>Configuración semanal</h2><p>Habilitado = permite editar intervalos en las fechas futuras de ese día.</p></div></div><div className="test-note">Prueba: activar/desactivar un día y comprobar que todas sus fechas futuras cambien entre editable y no editable, conservando sus intervalos.</div><div className="toggles">{weekdays.map((day) => <label key={day} className="toggle-row"><span>{day}</span><input data-cy={`toggle-${day.toLowerCase()}`} type="checkbox" checked={enabled[day]} onChange={() => toggleWeekday(day)} /><i /></label>)}</div></div><form className="info-card preferences" onSubmit={savePreferences}><div className="section-title"><Clock3 size={18} /><div><h2>Preferencias de reuniones</h2><p>Definí reglas para nuevas reservas.</p></div></div><div className="test-note">Pruebas: usar números positivos para guardar; ingresar texto o 0 para validar consistencia; cambiar la antelación/límite para simular reservas existentes.</div><label>Antelación mínima<select data-cy="lead-time-unit" value={unit} onChange={(e) => setUnit(e.target.value)}><option value="horas">Horas</option><option value="días">Días</option></select><input data-cy="lead-time-input" type="text" value={lead} onChange={(e) => setLead(e.target.value)} /></label><label>Límite de reservas diarias<input data-cy="daily-limit-input" type="text" value={limit} onChange={(e) => setLimit(e.target.value)} /></label><button data-cy="save-preferences-button" className="secondary-button" type="submit"><Save size={16} /> Guardar preferencias</button></form></section><div className="bottom-grid"><div className="test-note">Añadir intervalos: probar fin posterior al inicio, superposición y tipo laboral/bloqueado. Usar 09:00–12:00 para creación exitosa.</div><div className="test-note">Editar/eliminar: modificar un intervalo y verificar actualización; eliminar instancia o recurrencia completa. Para reservas próximas, comprobar que la operación sea rechazada.</div><div className="test-note"></div><div className="test-note">Bloquear día: probar sin reservas, con reservas futuras y con reservas dentro de 24 horas. Luego usar “Desbloquear día” para revertir.</div></div></main>{toast && <div data-cy="notification" className="toast" role="status">{toast}</div>}{modal && <div className="modal-backdrop"><div className="modal" role="dialog" aria-modal="true">{(modal === 'interval' || modal === 'edit') && <><div className="modal-title"><div><p className="eyebrow">{modal === 'edit' ? 'EDITAR INTERVALO' : 'NUEVO INTERVALO'}</p><h2>{modal === 'edit' ? 'Editar intervalo' : 'Añadir intervalo'}</h2></div><button className="icon-button" data-cy="close-modal" onClick={() => setModal(null)}><X size={18} /></button></div><form onSubmit={saveInterval}><label>Hora de inicio<input data-cy="interval-start-input" type="time" value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })} /></label><label>Hora de fin<input data-cy="interval-end-input" type="time" value={form.end} onChange={(e) => setForm({ ...form, end: e.target.value })} /></label><fieldset><legend>Tipo de intervalo</legend><label className="radio"><input data-cy="laboral-type-radio" type="radio" checked={form.type === 'laboral'} onChange={() => setForm({ ...form, type: 'laboral' })} /> Laboral</label><label className="radio"><input data-cy="blocked-type-radio" type="radio" checked={form.type === 'bloqueado'} onChange={() => setForm({ ...form, type: 'bloqueado' })} /> Bloqueado</label></fieldset><label className="repeat-row"><input data-cy="repeat-weekly-checkbox" type="checkbox" checked={form.recurring} onChange={(e) => setForm({ ...form, recurring: e.target.checked })} /> </label><div className="modal-actions"><button type="button" className="ghost-button" onClick={() => setModal(null)}>Cancelar</button><button data-cy="save-interval-button" className="primary-button" type="submit">Guardar intervalo</button></div></form></>}{modal === 'delete' && <><div className="modal-title"><div><p className="eyebrow">BAJA DE INTERVALO</p><h2>Eliminar intervalo</h2></div><button className="icon-button" onClick={() => setModal(null)}><X size={18} /></button></div><p className="modal-copy">¿Está seguro de que desea eliminar este intervalo? Esta acción es irreversible.</p><div className="modal-actions"><button className="ghost-button" onClick={() => deleteInterval(false)}>Eliminar definitivamente</button><button data-cy="delete-recurring-button" className="danger-button" onClick={() => deleteInterval(true)}></button></div></>}{modal === 'block' && <><div className="modal-title"><div><p className="eyebrow">RESERVA FUTURA DETECTADA</p><h2>¿Bloquear este día?</h2></div><button className="icon-button" onClick={() => setModal(null)}><X size={18} /></button></div><div className="warning-box"><LockKeyhole size={20} /><p>El día registra reservas activas. Las reservas futuras quedarán pendientes de reprogramación.</p></div><div className="modal-actions"><button data-cy="cancel-block-button" className="ghost-button" onClick={() => setModal(null)}>Cancelar</button><button data-cy="confirm-block-button" className="danger-button" onClick={confirmBlock}>Confirmar cambio</button></div></>}</div></div>}</div>
+  return (
+    <div className="app-shell">
+      {/* Header superior */}
+      <header className="topbar">
+        <div className="brand">
+          AgendaYA <span>— Administrador</span>
+        </div>
+        <nav>
+          <a>Inicio</a>
+          <a className="active">Disponibilidad</a>
+          <a>Eventos</a>
+          <a>Agenda</a>
+        </nav>
+        <button className="avatar" data-cy="profile-menu">
+          AD
+        </button>
+      </header>
+
+      {/* Contenido principal */}
+      <main className="content">
+        <div className="page-heading">
+          <div>
+            <p className="eyebrow">CONFIGURACIÓN</p>
+            <h1>Disponibilidad</h1>
+            <p className="muted">Definí cuándo pueden reservar reuniones contigo.</p>
+          </div>
+          <div className="sync">
+            <span className="status-dot" /> Todos los cambios están guardados
+          </div>
+        </div>
+
+        {/* Toolbar de navegación del calendario */}
+        <section className="toolbar-card">
+          <div className="toolbar-title">
+            <CalendarDays size={18} />
+            <div>
+              <strong>Calendario</strong>
+              <span>{formatMonth(cursor)}</span>
+            </div>
+          </div>
+          <div className="view-switch">
+            <button
+              data-cy="month-view-button"
+              className={view === 'month' ? 'selected' : ''}
+              onClick={() => setView('month')}
+            >
+              Vista mensual
+            </button>
+            <button
+              data-cy="week-view-button"
+              className={view === 'week' ? 'selected' : ''}
+              onClick={() => setView('week')}
+            >
+              Vista semanal
+            </button>
+          </div>
+          <div className="arrows">
+            <button aria-label="Mes anterior" data-cy="previous-month" onClick={() => navigate(-1)}>
+              <ChevronLeft size={17} />
+            </button>
+            <button aria-label="Mes siguiente" data-cy="next-month" onClick={() => navigate(1)}>
+              <ChevronRight size={17} />
+            </button>
+          </div>
+        </section>
+
+        {/* Área de trabajo: Calendario + Detalle */}
+        <section className="workspace">
+          {/* Panel del calendario */}
+          <div className="calendar-panel">
+            <div className="calendar-head">
+              <span>{formatMonth(cursor).toUpperCase()}</span>
+              <div className="legend">
+                <span><i className="dot green" /> Disponible</span>
+                <span><i className="dot blue" /> Configurado</span>
+                <span><i className="dot red" /> Bloqueado</span>
+                <span><i className="dot gray" /> No editable</span>
+              </div>
+            </div>
+            <div className={`calendar-grid ${view}`}>
+              <div className="week-labels">
+                {shortDays.map((day) => (
+                  <span key={day}>{day}</span>
+                ))}
+              </div>
+              <div className="days-grid">
+                {visibleDays.map((day, index) => (
+                  <button
+                    key={day.id}
+                    style={index === 0 && view === 'month' ? { gridColumnStart: mondayIndex(day.date) + 1 } : undefined}
+                    data-cy={`calendar-day-${day.date.getDate()}`}
+                    aria-label={`${day.date.getDate()}, ${dayState(day)}`}
+                    onClick={() => selectDay(day)}
+                    className={`day-cell ${dayState(day)} ${selected.id === day.id ? 'selected-day' : ''}`}
+                  >
+                    <b>{day.date.getDate()}</b>
+                    {day.intervals
+                      .filter((item) => !item.inactive)
+                      .slice(0, 2)
+                      .map((interval) => (
+                        <span key={interval.id} className={`mini-interval ${interval.type}`}>
+                          {interval.start} – {interval.end}
+                          {interval.recurring ? ' · semanal' : ''}
+                        </span>
+                      ))}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Panel lateral de detalle del día */}
+          <aside className="detail-panel">
+            <div className="detail-header">
+              <div>
+                <p className="eyebrow">DÍA SELECCIONADO</p>
+                <h2>
+                  {asDate(selected.id).getDate()} de {asDate(selected.id).toLocaleDateString('es-AR', { month: 'long' })}
+                </h2>
+              </div>
+              <span data-cy="day-status-pill" className={`state-pill ${dayState(selected)}`}>
+                {dayState(selected) === 'blocked'
+                  ? 'Bloqueado'
+                  : dayState(selected) === 'disabled'
+                  ? 'Deshabilitado'
+                  : dayState(selected) === 'configured'
+                  ? 'Configurado'
+                  : 'Disponible'}
+              </span>
+            </div>
+
+            <p data-cy="selected-date-text" className="detail-date">
+              {formatDate(selected.id)}
+            </p>
+
+            <div className="interval-heading">
+              <strong>Intervalos</strong>
+              <span>{selected.intervals.length} configurados</span>
+            </div>
+
+            <div className="interval-list">
+              {selected.intervals.length === 0 ? (
+                <div className="empty-state">
+                  <Clock3 size={23} />
+                  <span>Sin intervalos configurados</span>
+                  <small>Agregá un horario para comenzar.</small>
+                </div>
+              ) : (
+                selected.intervals.map((interval) => (
+                  <div
+                    key={interval.id}
+                    className={`interval-card ${interval.type} ${dayState(selected) === 'blocked' ? 'locked' : ''}`}
+                  >
+                    <div className="interval-time">
+                      <Clock3 size={16} />
+                      <strong>
+                        {interval.start} – {interval.end}
+                      </strong>
+                      {interval.recurring && <small className="recurrence-badge">Semanal</small>}
+                    </div>
+                    <span>{interval.type === 'laboral' ? 'Horario laboral' : 'Bloqueo de horario'}</span>
+                    <div className="interval-actions">
+                      <button
+                        data-cy={`edit-interval-${interval.id}`}
+                        onClick={() => openEdit(interval)}
+                        disabled={dayState(selected) === 'disabled' || dayState(selected) === 'blocked'}
+                      >
+                        <Pencil size={13} /> Editar
+                      </button>
+                      <button
+                        data-cy={`delete-interval-${interval.id}`}
+                        onClick={() => {
+                          setEditing(interval)
+                          setModal('delete')
+                        }}
+                        disabled={dayState(selected) === 'disabled' || dayState(selected) === 'blocked'}
+                      >
+                        <Trash2 size={13} /> Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {dayState(selected) === 'blocked' ? (
+              <button data-cy="unblock-day-button" className="secondary-button full-button" onClick={unblockDay}>
+                <RotateCcw size={16} /> Desbloquear día
+              </button>
+            ) : (
+              <>
+                <button
+                  data-cy="add-interval-button"
+                  className="primary-button"
+                  disabled={dayState(selected) === 'disabled'}
+                  onClick={() => {
+                    setEditing(null)
+                    setForm({ start: '', end: '', type: 'laboral', recurring: false })
+                    setModal('interval')
+                  }}
+                >
+                  <Plus size={17} /> Añadir intervalo
+                </button>
+                <button
+                  data-cy="block-day-button"
+                  className="danger-button"
+                  disabled={dayState(selected) === 'disabled'}
+                  onClick={blockDay}
+                >
+                  <LockKeyhole size={16} /> Bloquear día seleccionado
+                </button>
+              </>
+            )}
+          </aside>
+        </section>
+
+        {/* Notas y casos de prueba */}
+        <div className="test-notes-grid">
+          <p className="test-note">
+            Bloquear días: Probar bloquear los días 15 de abril y 23 de abril para verificar los criterios de aceptación 3 y 4 respectivamente.
+          </p>
+          <p className="test-note">
+            Probar Añadir un nuevo intervalo bloqueado el día 16 de abril de 2026, entre las 12:00 y 17:00hs para testear el Escenario 2 de los criterios de aceptación de la US_ADM_008.
+          </p>
+          <p className="test-note">
+            Editar/eliminar: probar eliminación del intervalo laboral del 15 de abril de 2026.
+          </p>
+        </div>
+
+        {/* Configuración semanal y Preferencias */}
+        <section className="bottom-grid">
+          {/* Configuración semanal */}
+          <div className="info-card">
+            <div className="section-title">
+              <Settings2 size={18} />
+              <div>
+                <h2>Configuración semanal</h2>
+                <p>Habilitado = permite editar intervalos en las fechas futuras de ese día.</p>
+              </div>
+            </div>
+            <div className="test-note">
+              Prueba: activar/desactivar un día y comprobar que todas sus fechas futuras cambien entre editable y no editable, conservando sus intervalos.
+            </div>
+            <div className="toggles">
+              {weekdays.map((day) => (
+                <label key={day} className="toggle-row">
+                  <span>{day}</span>
+                  <input
+                    data-cy={`toggle-${day.toLowerCase()}`}
+                    type="checkbox"
+                    checked={enabled[day]}
+                    onChange={() => toggleWeekday(day)}
+                  />
+                  <i />
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Preferencias de reuniones */}
+          <form className="info-card preferences" onSubmit={savePreferences}>
+            <div className="section-title">
+              <Clock3 size={18} />
+              <div>
+                <h2>Preferencias de reuniones</h2>
+                <p>Definí reglas para nuevas reservas.</p>
+              </div>
+            </div>
+            <div className="test-note">
+              Pruebas: usar números positivos para guardar; ingresar texto o 0 para validar consistencia; cambiar la antelación/límite para simular reservas existentes.
+            </div>
+            <label>
+              Antelación mínima
+              <select data-cy="lead-time-unit" value={unit} onChange={(e) => setUnit(e.target.value)}>
+                <option value="horas">Horas</option>
+                <option value="días">Días</option>
+              </select>
+              <input
+                data-cy="lead-time-input"
+                type="text"
+                value={lead}
+                onChange={(e) => setLead(e.target.value)}
+              />
+            </label>
+            <label>
+              Límite de reservas diarias
+              <input
+                data-cy="daily-limit-input"
+                type="text"
+                value={limit}
+                onChange={(e) => setLimit(e.target.value)}
+              />
+            </label>
+            <button data-cy="save-preferences-button" className="secondary-button" type="submit">
+              <Save size={16} /> Guardar preferencias
+            </button>
+          </form>
+        </section>
+
+        {/* Guía de pruebas rápidas */}
+        <div className="bottom-grid">
+          <div className="test-note">
+            Añadir intervalos: probar fin posterior al inicio, superposición y tipo laboral/bloqueado. Usar 09:00–12:00 para creación exitosa.
+          </div>
+          <div className="test-note">
+            Editar/eliminar: modificar un intervalo y verificar actualización; eliminar instancia o recurrencia completa. Para reservas próximas, comprobar que la operación sea rechazada.
+          </div>
+          <div className="test-note"></div>
+          <div className="test-note">
+            Bloquear día: probar sin reservas, con reservas futuras y con reservas dentro de 24 horas. Luego usar “Desbloquear día” para revertir.
+          </div>
+        </div>
+      </main>
+
+      {/* Toast de notificación */}
+      {toast && (
+        <div data-cy="notification" className="toast" role="status">
+          {toast}
+        </div>
+      )}
+
+      {/* Modales */}
+      {modal && (
+        <div className="modal-backdrop">
+          <div className="modal" role="dialog" aria-modal="true">
+            {/* Modal: Añadir o Editar Intervalo */}
+            {(modal === 'interval' || modal === 'edit') && (
+              <>
+                <div className="modal-title">
+                  <div>
+                    <p className="eyebrow">{modal === 'edit' ? 'EDITAR INTERVALO' : 'NUEVO INTERVALO'}</p>
+                    <h2>{modal === 'edit' ? 'Editar intervalo' : 'Añadir intervalo'}</h2>
+                  </div>
+                  <button className="icon-button" data-cy="close-modal" onClick={() => setModal(null)}>
+                    <X size={18} />
+                  </button>
+                </div>
+                <form onSubmit={saveInterval}>
+                  <label>
+                    Hora de inicio
+                    <input
+                      data-cy="interval-start-input"
+                      type="time"
+                      value={form.start}
+                      onChange={(e) => setForm({ ...form, start: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Hora de fin
+                    <input
+                      data-cy="interval-end-input"
+                      type="time"
+                      value={form.end}
+                      onChange={(e) => setForm({ ...form, end: e.target.value })}
+                    />
+                  </label>
+                  <fieldset>
+                    <legend>Tipo de intervalo</legend>
+                    <label className="radio">
+                      <input
+                        data-cy="laboral-type-radio"
+                        type="radio"
+                        checked={form.type === 'laboral'}
+                        onChange={() => setForm({ ...form, type: 'laboral' })}
+                      />{' '}
+                      Laboral
+                    </label>
+                    <label className="radio">
+                      <input
+                        data-cy="blocked-type-radio"
+                        type="radio"
+                        checked={form.type === 'bloqueado'}
+                        onChange={() => setForm({ ...form, type: 'bloqueado' })}
+                      />{' '}
+                      Bloqueado
+                    </label>
+                  </fieldset>
+                  <label className="repeat-row">
+                    <input
+                      data-cy="repeat-weekly-checkbox"
+                      type="checkbox"
+                      checked={form.recurring}
+                      onChange={(e) => setForm({ ...form, recurring: e.target.checked })}
+                    />
+                  </label>
+                  <div className="modal-actions">
+                    <button
+                      data-cy="cancel-interval-button"
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => setModal(null)}
+                    >
+                      Cancelar
+                    </button>
+                    <button data-cy="save-interval-button" className="primary-button" type="submit">
+                      Guardar intervalo
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+
+            {/* Modal: Confirmación de Eliminación */}
+            {modal === 'delete' && (
+              <>
+                <div className="modal-title">
+                  <div>
+                    <p className="eyebrow">BAJA DE INTERVALO</p>
+                    <h2>Eliminar intervalo</h2>
+                  </div>
+                  <button data-cy="close-delete-modal" className="icon-button" onClick={() => setModal(null)}>
+                    <X size={18} />
+                  </button>
+                </div>
+                <p className="modal-copy">¿Está seguro de que desea eliminar este intervalo? Esta acción es irreversible.</p>
+                <div className="modal-actions">
+                  <button
+                    data-cy="confirm-delete-interval-button"
+                    className="ghost-button"
+                    onClick={() => deleteInterval(false)}
+                  >
+                    Eliminar definitivamente
+                  </button>
+                  <button
+                    data-cy="delete-recurring-button"
+                    className="danger-button"
+                    onClick={() => deleteInterval(true)}
+                  >
+                    Eliminar todas las repeticiones
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Modal: Advertencia / Confirmación de Bloqueo de Día */}
+            {modal === 'block' && (
+              <>
+                <div className="modal-title">
+                  <div>
+                    <p className="eyebrow">RESERVA FUTURA DETECTADA</p>
+                    <h2>¿Bloquear este día?</h2>
+                  </div>
+                  <button data-cy="close-block-modal" className="icon-button" onClick={() => setModal(null)}>
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className="warning-box">
+                  <LockKeyhole size={20} />
+                  <p>El día registra reservas activas. Las reservas futuras quedarán pendientes de reprogramación.</p>
+                </div>
+                <div className="modal-actions">
+                  <button data-cy="cancel-block-button" className="ghost-button" onClick={() => setModal(null)}>
+                    Cancelar
+                  </button>
+                  <button data-cy="confirm-block-button" className="danger-button" onClick={confirmBlock}>
+                    Confirmar cambio
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
